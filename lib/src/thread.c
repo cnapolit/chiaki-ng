@@ -13,7 +13,9 @@
 #include <switch.h>
 #endif
 
-#if defined(__ANDROID__)
+// pthread_clockjoin_np needs glibc 2.31+. Bionic and the older glibc the webOS NDK targets both lack it,
+// so both use the portable helper-thread timed join below.
+#if defined(__ANDROID__) || (defined(__GLIBC__) && !__GLIBC_PREREQ(2, 31))
 struct chiaki_timedjoin_ctx
 {
 	pthread_t target;
@@ -309,7 +311,7 @@ CHIAKI_EXPORT ChiakiErrorCode chiaki_thread_timedjoin(ChiakiThread *thread, void
 		return CHIAKI_ERR_THREAD;
 	if(retval)
 		*retval = thread->ret;
-#elif defined(__ANDROID__)
+#elif defined(__ANDROID__) || (defined(__GLIBC__) && !__GLIBC_PREREQ(2, 31))
 	// Android Bionic lacks pthread_clockjoin_np/pthread_timedjoin_np.
 	// Use a helper thread + condvar to implement timed join portably.
 	struct chiaki_timedjoin_ctx *ctx = calloc(1, sizeof(*ctx));
